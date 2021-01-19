@@ -27,6 +27,7 @@ enum layers {
     _NUMBER = 0,
     _FUNCTION,
     _INTELLIJ,
+    _ADJUST,
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -44,7 +45,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                  KC_F7,    KC_F8,       KC_F9,
                  C(KC_T),  C(KC_N),     C(S(KC_UP)),
                  C(KC_K),  C(S(KC_N)),  C(S(KC_DOWN)),
-                 C(KC_F9), C(KC_F5),    TO(_NUMBER))
+                 C(KC_F9), C(KC_F5),    TG(_ADJUST)),
+    [_ADJUST] = LAYOUT(/* Adjust layer */
+                 _______,    _______,       _______,
+                 RGB_SAI, RGB_HUI, RGB_VAI,
+                 RGB_SAD, RGB_HUD, RGB_VAD,
+                 _______, _______,    TO(_NUMBER))
 };
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
@@ -96,6 +102,9 @@ void oled_task_user(void) {
             break;
         case _INTELLIJ:
             oled_write_P(PSTR("IntelliJ\n"), false);
+            break;
+        case _ADJUST:
+            oled_write_P(PSTR("Adjust\n"), false);
             break;
         default:
             // Or use the write_ln shortcut over adding '\n' to the end of your string
