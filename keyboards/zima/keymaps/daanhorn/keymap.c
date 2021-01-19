@@ -23,17 +23,28 @@ enum custom_keycodes {
     HS_CASE
 };
 
-enum layer_names {
-    _NUMBER,
-    _FN
+enum layers {
+    _NUMBER = 0,
+    _FUNCTION,
+    _INTELLIJ,
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
-    [0] = LAYOUT(/* Base */
+    [_NUMBER] = LAYOUT(/* Base */
                  KC_7,  KC_8,  KC_9,
                  KC_4,  KC_5,  KC_6,
-                 KC_1,   KC_2,  KC_3,
-                 KC_0,  HS_PCB,  HS_CASE)
+                 KC_1,  KC_2,  KC_3,
+                 KC_0,  KC_DOT,  TG(_FUNCTION)),
+    [_FUNCTION] = LAYOUT(/* Function keys */
+                 KC_F7,  KC_F8,  KC_F9,
+                 KC_F4,  KC_F5,  KC_F6,
+                 KC_F1,  KC_F2,  KC_F3,
+                 KC_F10,  MT(KC_F12, KC_F11),  TG(_INTELLIJ)),
+    [_INTELLIJ] = LAYOUT(/* IntelliJ commands */
+                 KC_F7,    KC_F8,       KC_F9,
+                 C(KC_T),  C(KC_N),     C(S(KC_UP)),
+                 C(KC_K),  C(S(KC_N)),  C(S(KC_DOWN)),
+                 C(KC_F9), C(KC_F5),    TO(_NUMBER))
 };
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
@@ -80,8 +91,11 @@ void oled_task_user(void) {
         case _NUMBER:
             oled_write_P(PSTR("Number\n"), false);
             break;
-        case _FN:
-            oled_write_P(PSTR("FN\n"), false);
+        case _FUNCTION:
+            oled_write_P(PSTR("Function\n"), false);
+            break;
+        case _INTELLIJ:
+            oled_write_P(PSTR("IntelliJ\n"), false);
             break;
         default:
             // Or use the write_ln shortcut over adding '\n' to the end of your string
@@ -102,17 +116,34 @@ void matrix_scan_user(void) {}
 
 void led_set_user(uint8_t usb_led) {}
 
+
+bool is_ctl_tab_active = false;
+uint16_t ctl_tab_timer = 0;
+
 #ifdef ENCODER_ENABLE
 void encoder_update_user(uint8_t index, bool clockwise) {
-    if (index == 0) {
-        // Move whole words. Hold shift to select while moving.
-        if (clockwise) {
-            // tap_code16(C(KC_LEFT));
-            tap_code16(KC_AUDIO_VOL_DOWN);
-        } else {
-            // tap_code16(C(KC_RGHT));
-            tap_code16(KC_AUDIO_VOL_UP);
-        }
+    switch (biton32(layer_state)) {
+        case _INTELLIJ:
+            // History scrubbing.
+            if (clockwise) {
+                tap_code16(C(KC_Z));
+            } else {
+                tap_code16(C(S(KC_Z)));
+            }
+            break;
+        default:
+            // Switch between tabs with ctrl tab.
+            if (clockwise) {
+                if (!is_ctl_tab_active) {
+                    is_ctl_tab_active = true;
+                    register_code(KC_LCTL);
+                } 
+                ctl_tab_timer = timer_read();
+                tap_code16(KC_TAB);
+            } else {
+                tap_code16(S(KC_TAB));
+            }
+            break;
     }
 }
 #endif
